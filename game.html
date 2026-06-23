@@ -242,10 +242,18 @@
         };
     }
 
+// 📌 원 크기와 이미지 크기를 자로 잰 듯이 완벽하게 맞춰주는 최적화 코드
     function getRenderOptions(setting) {
         if (setting.image) {
-            // 실시간 리사이징 연산 최적화 비율 계산
-            const imgScale = (setting.radius * 2) / setting.baseSize;
+            // 프리로드된 실제 이미지 객체를 가져옵니다.
+            const imgElement = preloadedImages[setting.image];
+            
+            // 만약 이미지가 아직 로드되지 않았다면 설정된 baseSize를 대신 사용합니다.
+            const actualWidth = imgElement ? imgElement.width : setting.baseSize;
+            
+            // 물리 엔진의 지름(radius * 2)을 실제 이미지 가로 크기로 나누어 스케일을 정확히 맞춥니다.
+            const imgScale = (setting.radius * 2) / actualWidth;
+            
             return {
                 sprite: {
                     texture: setting.image,
