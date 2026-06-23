@@ -349,17 +349,19 @@
         });
     }
 
-    window.addEventListener('click', (event) => {
+// 📌 기존 window.addEventListener('click', ...) 전체를 이 코드로 교체합니다!
+    window.addEventListener('pointerdown', (event) => {
         if (isGameOver) return; 
         
         if (event.target.closest('.popup-screen') || event.target.closest('#ui-container')) return;
 
         const canvasBounds = render.canvas.getBoundingClientRect();
+        
+        // 📌 모바일/PC 모두에서 터치 및 클릭 좌표를 정확하게 계산하도록 수정
         const mouseX = event.clientX - canvasBounds.left;
         const mouseY = event.clientY - canvasBounds.top;
         
         if (mouseX > 20 && mouseX < 380 && mouseY > 0 && mouseY < 600) {
-            // 📌 고정 랜덤 대신 NEXT 상자에 표시되었던 작곡가를 투하하도록 복구
             const selectedNote = noteSettings[nextNoteIndex];
             
             const newNote = Bodies.circle(mouseX, 80, selectedNote.radius, {
@@ -370,7 +372,6 @@
             Composite.add(engine.world, newNote);
             setTimeout(() => { newNote.plugin.isPlaced = true; }, 1000);
 
-            // 투하 후 다음 대기 작곡가 새로 뽑기
             updateNextData();
         }
     });
