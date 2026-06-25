@@ -193,6 +193,7 @@
     let nextNoteIndex = 0; 
 
     let engine, render, runner, ground, leftWall, rightWall;
+    let isClickBlocked = false; // 📌 연타 및 멀티터치 방지용 변수 추가!
     
     const scoreDisplay = document.getElementById('score');
     const gameOverScreen = document.getElementById('game-over-screen');
@@ -390,10 +391,13 @@
         });
     }
 
-    // 📌 모바일/웹 터치 미스 방지 및 좌표계 연산 최적화 (pointerdown 표준 통합)
+// 📌 멀티터치 및 마구잡이 연타 완전 차단 버전
     window.addEventListener('pointerdown', (event) => {
         if (isGameOver) return; 
         
+        // 📌 이미 작곡가가 투하 중(쿨타임)이라면 터치 무시하기
+        if (isClickBlocked) return; 
+
         if (event.target.closest('.popup-screen') || event.target.closest('#ui-container')) return;
 
         const canvasBounds = render.canvas.getBoundingClientRect();
@@ -401,6 +405,9 @@
         const mouseY = event.clientY - canvasBounds.top;
         
         if (mouseX > 20 && mouseX < 380 && mouseY > 0 && mouseY < 600) {
+            // 📌 터치되는 순간 즉시 방어벽 가동 (추가 터치 차단)
+            isClickBlocked = true;
+
             const selectedNote = noteSettings[nextNoteIndex];
             
             const newNote = Bodies.circle(mouseX, 80, selectedNote.radius, {
@@ -412,6 +419,11 @@
             setTimeout(() => { newNote.plugin.isPlaced = true; }, 1000);
 
             updateNextData();
+
+            // 📌 0.5초(500ms) 뒤에 방어벽을 해제하여 다음 작곡가를 떨어뜨릴 수 있게 합니다.
+            setTimeout(() => {
+                isClickBlocked = false;
+            }, 500);
         }
     });
 
