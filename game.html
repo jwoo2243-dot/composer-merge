@@ -326,11 +326,10 @@
                 if (bodyA.plugin && bodyA.plugin.level !== undefined && bodyB.plugin && bodyB.plugin.level !== undefined) {
                     if (bodyA.plugin.level === bodyB.plugin.level) {
                         const currentLevel = bodyA.plugin.level;
-                        currentScore += (currentLevel + 1) * 10;
-                        scoreDisplay.innerText = currentScore; 
                         
-                        if (currentLevel >= noteSettings.length - 1) {
-                            currentScore += 1000; 
+                        // 👑 [수정] 최종 보스인 스트라빈스키(Level 7)끼리 만났을 때 진짜 클리어!
+                        if (currentLevel === noteSettings.length - 1) {
+                            currentScore += 5000; // 스트라빈스키 합성 보너스는 화끈하게 5000점!
                             scoreDisplay.innerText = currentScore + " (브라보!)";
                             
                             isGameOver = true; 
@@ -341,6 +340,11 @@
                             Runner.stop(runner);
                             return;
                         }
+
+                        // 일반 작곡가 합성 점수 누적
+                        currentScore += (currentLevel + 1) * 10;
+                        scoreDisplay.innerText = currentScore; 
+                        
                         const middleX = (bodyA.position.x + bodyB.position.x) / 2;
                         const middleY = (bodyA.position.y + bodyB.position.y) / 2;
                         Composite.remove(engine.world, [bodyA, bodyB]);
