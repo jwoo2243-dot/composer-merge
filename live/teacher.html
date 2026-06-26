@@ -33,19 +33,19 @@
 <body>
 
 <div class="header">
-    <h1>🎼 서양음악사 매칭 대단원 제어판</h1>
+    <h1>🎼 서양음악사 수박게임 교사용</h1>
     <div>
         현재 서버 상태: <span id="server-status" class="status-badge">대기 중</span>
     </div>
     <div>
-        <button class="btn btn-start" onclick="setGameStatus('START')">🏁 게임 시작 신호 전송</button>
+        <button class="btn btn-start" onclick="setGameStatus('START')">🏁 게임 시작!!!</button>
         <button class="btn btn-reset" onclick="resetAllData()">🔄 전체 초기화</button>
     </div>
 </div>
 
 <div class="grid-container">
     <div class="board">
-        <h2>⏱️ 1. 빛의 속도 완주 순위표 <span style="font-size: 14px; color: #666; font-weight: normal;">(빨리 클리어 한 순)</span></h2>
+        <h2>⏱️ 1. 선착순 완주 순위표 <span style="font-size: 14px; color: #666; font-weight: normal;">(빨리 클리어 한 순)</span></h2>
         <table>
             <thead>
                 <tr>
@@ -60,7 +60,7 @@
     </div>
 
     <div class="board">
-        <h2>🏆 2. 명예의 전당 점수 순위표 <span style="font-size: 14px; color: #666; font-weight: normal;">(최고 점수 순)</span></h2>
+        <h2>🏆 2. 최고 점수 순위표 <span style="font-size: 14px; color: #666; font-weight: normal;">(최고 점수 순)</span></h2>
         <table>
             <thead>
                 <tr>
@@ -114,7 +114,7 @@
             badge.style.backgroundColor = "#2a9d8f";
             badge.style.color = "white";
         } else {
-            badge.innerText = "💤 학생 대기 수집 중";
+            badge.innerText = "💤 학생 대기 중";
             badge.style.backgroundColor = "#ddd";
             badge.style.color = "#333";
         }
