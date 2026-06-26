@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>🎶 서양음악사 게임 교사용 마스터 대시보드</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .btn { padding: 12px 28px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-start { background-color: #2a9d8f; }
+        .btn-start:hover { background-color: #21867a; }
+        .btn-reset { background-color: #e63946; margin-left: 10px; }
+        .btn-reset:hover { background-color: #cb2d3a; }
+        .status-badge { font-size: 18px; padding: 6px 15px; border-radius: 20px; background: #ddd; font-weight: bold; }
+        
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .board { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; border-bottom: 3px solid #333; padding-bottom: 10px; display: flex; justify-content: space-between; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 16px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        tr:nth-child(1) td { font-weight: bold; color: #ffb703; background-color: #fffdf0; } /* 1등 강조 */
+
+        .full-list { grid-column: span 2; }
+        .badge-play { color: #118ab2; font-weight: bold; }
+        .badge-clear { color: #2a9d8f; font-weight: bold; }
+        .badge-fail { color: #e63946; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🎼 서양음악사 매칭 대단원 제어판</h1>
+    <div>
+        현재 서버 상태: <span id="server-status" class="status-badge">대기 중</span>
+    </div>
+    <div>
+        <button class="btn btn-start" onclick="setGameStatus('START')">🏁 게임 시작 신호 전송</button>
+        <button class="btn btn-reset" onclick="resetAllData()">🔄 전체 초기화</button>
+    </div>
+</div>
+
+<div class="grid-container">
+    <div class="board">
+        <h2>⏱️ 1. 빛의 속도 완주 순위표 <span style="font-size: 14px; color: #666; font-weight: normal;">(빨리 클리어 한 순)</span></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%">순위</th>
+                    <th style="width: 45%">학생 정보</th>
+                    <th style="width: 40%">완주 시간</th>
+                </tr>
+            </thead>
+            <tbody id="time-rank-table">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="board">
+        <h2>🏆 2. 명예의 전당 점수 순위표 <span style="font-size: 14px; color: #666; font-weight: normal;">(최고 점수 순)</span></h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%">순위</th>
+                    <th style="width: 45%">학생 정보</th>
+                    <th style="width: 40%">최종 스코어</th>
+                </tr>
+            </thead>
+            <tbody id="score-rank-table">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="board full-list">
+        <h2>👥 실시간 전체 학생 접속/플레이 현황 (<span id="total-count">0</span>명)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>학생명</th>
+                    <th>현재 실시간 점수</th>
+                    <th>진행 상태</th>
+                </tr>
+            </thead>
+            <tbody id="student-all-table">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // 🔗 학생용과 "완벽히 일치하는" 파이어베이스 정보 입력구역
+// 🔗 파이어베이스 연동 설정 구역 (선생님의 실제 주소로 교체 완료!)
+    const firebaseConfig = {
+        apiKey: "AIzaSyAEDgfUQXvdNVKnpfTB5rycOygL8qyvsJQ",
+        authDomain: "compose-merge-live.firebaseapp.com",
+        databaseURL: "https://compose-merge-live-default-rtdb.firebaseio.com",
+        projectId: "compose-merge-live",
+        storageBucket: "compose-merge-live.firebasestorage.app",
+        messagingSenderId: "382424352533",
+        appId: "1:382424352533:web:9e928bf6b2520599884b1c"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // 서버 상태 실시간 갱신
+    database.ref('gameState/status').on('value', (snapshot) => {
+        const status = snapshot.val() || "READY";
+        const badge = document.getElementById('server-status');
+        if(status === "START") {
+            badge.innerText = "🚀 연주 진행 중!";
+            badge.style.backgroundColor = "#2a9d8f";
+            badge.style.color = "white";
+        } else {
+            badge.innerText = "💤 학생 대기 수집 중";
+            badge.style.backgroundColor = "#ddd";
+            badge.style.color = "#333";
+        }
+    });
+
+    // 교사 원격 상태 변경 송신
+    function setGameStatus(status) {
+        database.ref('gameState').set({ status: status });
+    }
+
+    // 다음 라운드를 위한 전체 청소 기능
+    function resetAllData() {
+        if(confirm("모든 학생의 점수 데이터와 순위표를 포맷하고 대기방으로 되돌릴까요?")) {
+            database.ref('students').remove();
+            database.ref('gameState').set({ status: "READY" });
+        }
+    }
+
+    // 📡 리얼타임 데이터 수집 및 더블 소팅 엔진 가동
+    database.ref('students').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const studentList = [];
+        
+        if (data) {
+            Object.keys(data).forEach(key => {
+                studentList.push(data[key]);
+            });
+        }
+
+        document.getElementById('total-count').innerText = studentList.length;
+
+        // 1. 전체 현황판 렌더링
+        const allTable = document.getElementById('student-all-table');
+        allTable.innerHTML = "";
+        studentList.forEach(s => {
+            let badgeClass = "badge-play";
+            if(s.status.includes("완주")) badgeClass = "badge-clear";
+            if(s.status.includes("탈락")) badgeClass = "badge-fail";
+
+            allTable.innerHTML += `<tr>
+                <td><b>${s.name}</b></td>
+                <td>${s.score} 점</td>
+                <td class="${badgeClass}">${s.status}</td>
+            </tr>`;
+        });
+
+        // 2. [순위표 1] 타임 어택 정렬 (clearTime이 작은 순, 단 완주자만 표시)
+        const timeRankTable = document.getElementById('time-rank-table');
+        timeRankTable.innerHTML = "";
+        const clearStudents = studentList.filter(s => s.clearTime < 999999);
+        clearStudents.sort((a, b) => a.clearTime - b.clearTime);
+
+        clearStudents.slice(0, 10).forEach((s, idx) => {
+            timeRankTable.innerHTML += `<tr>
+                <td>🏅 ${idx + 1}등</td>
+                <td>${s.name}</td>
+                <td><span style="color:#2a9d8f; font-weight:bold;">${s.clearTime}초</span></td>
+            </tr>`;
+        });
+        if(clearStudents.length === 0) {
+            timeRankTable.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#999;'>아직 완주한 음악가가 없습니다.</td></tr>";
+        }
+
+        // 3. [순위표 2] 고득점 점수 정렬 (score가 높은 순)
+        const scoreRankTable = document.getElementById('score-rank-table');
+        scoreRankTable.innerHTML = "";
+        const scoreStudents = [...studentList];
+        scoreStudents.sort((a, b) => b.score - a.score);
+
+        scoreStudents.slice(0, 10).forEach((s, idx) => {
+            scoreRankTable.innerHTML += `<tr>
+                <td>🏆 ${idx + 1}등</td>
+                <td>${s.name}</td>
+                <td><span style="color:#118ab2; font-weight:bold;">${s.score}점</span></td>
+            </tr>`;
+        });
+        if(scoreStudents.length === 0) {
+            scoreRankTable.innerHTML = "<tr><td colspan='3' style='text-align:center; color:#999;'>접속한 학생이 없습니다.</td></tr>";
+        }
+    });
+</script>
+</body>
+</html>
